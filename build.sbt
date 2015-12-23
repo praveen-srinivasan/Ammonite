@@ -165,12 +165,47 @@ lazy val repl = project
     }
   )
 
+
 /**
- * Project that binds together [[ops]] and [[repl]], turning them into a
- * credible systems shell that can be used to replace bash/zsh/etc. for
- * common housekeeping tasks
+ * REPL available via remote ssh access.
+ * Plug into any app environment for live hacking on a live application.
  */
-lazy val shell = project
+lazy val sshd = project
+    .dependsOn(repl)
+    .settings(
+      sharedSettings,
+
+      name := "ammonite-sshd",
+      libraryDependencies ++= Seq(
+        "org.apache.sshd" % "sshd-core" % "0.14.0",
+        //-- test --//
+        // slf4j-nop makes sshd server use logger that writes into the void
+        "org.slf4j" % "slf4j-nop" % "1.7.12" % "test",
+        "com.jcraft" % "jsch" % "0.1.53" % "test",
+        "org.scalacheck" %% "scalacheck" % "1.12.4" % "test"
+      )
+  )
+
+
+lazy val jupyter_kernel = project
+  .dependsOn(repl)
+  .settings(
+    sharedSettings,
+    name := "ammonite-jupyter-kernel",
+    crossVersion := CrossVersion.full,
+    libraryDependencies ++= Seq("org.zeromq" % "jeromq" % "0.3.5",
+      "com.github.scopt" %% "scopt" % "3.3.0",
+      "org.json4s" % "json4s-jackson_2.11" % "3.3.0"
+    )
+  )
+
+
+/**
+  * Project that binds together [[ops]] and [[repl]], turning them into a
+  * credible systems shell that can be used to replace bash/zsh/etc. for
+  * common housekeeping tasks
+  */
+/*lazy val shell = project
   .dependsOn(ops, repl % "compile->compile;test->test")
   .settings(
     sharedSettings,
@@ -204,25 +239,6 @@ lazy val integration = project
   )
 
 
-/**
- * REPL available via remote ssh access.
- * Plug into any app environment for live hacking on a live application.
- */
-lazy val sshd = project
-    .dependsOn(repl)
-    .settings(
-      sharedSettings,
-
-      name := "ammonite-sshd",
-      libraryDependencies ++= Seq(
-        "org.apache.sshd" % "sshd-core" % "0.14.0",
-        //-- test --//
-        // slf4j-nop makes sshd server use logger that writes into the void
-        "org.slf4j" % "slf4j-nop" % "1.7.12" % "test",
-        "com.jcraft" % "jsch" % "0.1.53" % "test",
-        "org.scalacheck" %% "scalacheck" % "1.12.4" % "test"
-      )
-  )
 
 lazy val readme = ScalatexReadme(
   projectId = "readme",
@@ -266,3 +282,4 @@ lazy val published = project
   .in(file("target/published"))
   .aggregate(ops, shell, terminal, repl, sshd)
   .settings(dontPublishSettings)
+*/
