@@ -107,6 +107,8 @@ lazy val repl = project
     crossVersion := CrossVersion.full,
     test in assembly := {},
     name := "ammonite-repl",
+    resolvers ++= Seq(Resolver.sonatypeRepo("releases"),
+      Resolver.sonatypeRepo("snapshots")),
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-compiler" % scalaVersion.value,
       "jline" % "jline" % "2.12",
@@ -116,7 +118,8 @@ lazy val repl = project
       "com.lihaoyi" %% "upickle" % "0.3.6",
       "com.lihaoyi" %% "pprint" % "0.3.6",
       "com.github.scopt" %% "scopt" % "3.3.0",
-      "commons-io" % "commons-io" % "2.4"
+      "commons-io" % "commons-io" % "2.4",
+      "com.github.alexarchambault.jupyter" % "jupyter-kernel_2.11" % "0.2.0-SNAPSHOT"
     ),
     libraryDependencies ++= (
       if (scalaVersion.value startsWith "2.10.") Nil
