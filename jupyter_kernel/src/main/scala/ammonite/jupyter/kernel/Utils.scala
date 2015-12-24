@@ -179,7 +179,7 @@ class ShellListener(socket: Socket) extends SocketListener(socket) {
     msg.msgType match {
       case KERNEL_INFO_REQUEST => {
         //println("Sending kernel info request")
-        socket.send(KERNEL_INFO_REQUEST_RESPONSE)
+       // socket.send(KERNEL_INFO_REQUEST_RESPONSE)
 
       }
       case EXECUTE_REQUEST => {

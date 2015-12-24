@@ -107,8 +107,7 @@ lazy val repl = project
     crossVersion := CrossVersion.full,
     test in assembly := {},
     name := "ammonite-repl",
-    resolvers ++= Seq(Resolver.sonatypeRepo("releases"),
-      Resolver.sonatypeRepo("snapshots")),
+
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-compiler" % scalaVersion.value,
       "jline" % "jline" % "2.12",
@@ -118,8 +117,7 @@ lazy val repl = project
       "com.lihaoyi" %% "upickle" % "0.3.6",
       "com.lihaoyi" %% "pprint" % "0.3.6",
       "com.github.scopt" %% "scopt" % "3.3.0",
-      "commons-io" % "commons-io" % "2.4",
-      "com.github.alexarchambault.jupyter" % "jupyter-kernel_2.11" % "0.2.0-SNAPSHOT"
+      "commons-io" % "commons-io" % "2.4"
     ),
     libraryDependencies ++= (
       if (scalaVersion.value startsWith "2.10.") Nil
@@ -194,11 +192,21 @@ lazy val jupyter_kernel = project
   .dependsOn(repl)
   .settings(
     sharedSettings,
+    resolvers ++= Seq(Resolver.sonatypeRepo("releases"),
+      Resolver.sonatypeRepo("snapshots")),
     name := "ammonite-jupyter-kernel",
     crossVersion := CrossVersion.full,
     libraryDependencies ++= Seq("org.zeromq" % "jeromq" % "0.3.5",
       "com.github.scopt" %% "scopt" % "3.3.0",
-      "org.json4s" % "json4s-jackson_2.11" % "3.3.0"
+      "org.json4s" %% "json4s-jackson" % "3.3.0",
+      "com.github.alexarchambault.jupyter" %% "jupyter-kernel" % "0.2.0-SNAPSHOT",
+        "com.typesafe" % "config" % "1.2.1",
+        "com.github.alexarchambault" %% "argonaut-shapeless_6.1" % "0.1.1",
+        "org.zeromq" % "jeromq" % "0.3.4",
+        "com.typesafe.scala-logging" %% "scala-logging-slf4j" % "2.1.2",
+        "org.scalaz.stream" %% "scalaz-stream" % "0.6a",
+      "com.github.alexarchambault" %% "case-app" % "0.2.2",
+      "ch.qos.logback" % "logback-classic" % "1.0.13"
     )
   )
 
