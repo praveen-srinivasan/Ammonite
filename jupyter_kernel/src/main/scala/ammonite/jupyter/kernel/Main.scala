@@ -244,4 +244,8 @@ object ScalaInterpreter {
 
 object JupyterScala extends AppOf[JupyterScala] {
   val parser = default
+  override def main(args: Array[String]): Unit = {
+    super.main(args)
+         //println("Hello, world!")
+    }
 }
