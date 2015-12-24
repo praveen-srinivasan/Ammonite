@@ -79,7 +79,7 @@ case class JupyterConnectionInfo(portNumMap: Map[JupyterSocketInfo.JupyterSocket
       SocketKeys.zipWithIndex.foreach{ case (key, idx) =>
           poller.pollin(idx) match {
             case true =>
-              println("Socket " + key  + " got msg")
+              //println("Socket " + key  + " got msg")
               listenerMap(key).recvAndProcessMsg
             case false =>
           }
