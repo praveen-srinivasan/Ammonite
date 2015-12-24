@@ -56,9 +56,15 @@ class Repl(input: InputStream,
         history = history :+ code
       }
     )
+
+
+
     _ <- Signaller("INT") { interp.mainThread.stop() }
     out <- interp.processLine(code, stmts, _.foreach(printer.print))
   } yield {
+    println("Code: " + code)
+    println("Stmts: " + stmts.reduce( _ + "\n" + _ ))
+
     Timer("interp.processLine end")
     printer.println()
     out

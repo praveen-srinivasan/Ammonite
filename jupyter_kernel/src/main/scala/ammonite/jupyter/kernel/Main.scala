@@ -8,11 +8,15 @@ import ammonite.ops.Path
 import ammonite.repl.frontend.{AmmoniteFrontEnd, FrontEnd}
 import ammonite.repl.interp.Interpreter
 import ammonite.repl._
+import jupyter.api.Publish
+import jupyter.kernel.interpreter.DisplayData.EmptyData
 import jupyter.kernel.protocol.Output.LanguageInfo
+import jupyter.kernel.protocol.ParsedMessage
 import jupyter.kernel.{interpreter, KernelInfo}
 import jupyter.kernel.config.Module
 import jupyter.kernel.interpreter//.{InterpreterKernel, Interpreter}
 import jupyter.kernel.server.{ServerAppOptions, ServerApp}
+import scalaz.BuildInfo
 
 import caseapp._
 import com.typesafe.scalalogging.slf4j.LazyLogging
@@ -24,7 +28,7 @@ object ScalaModule extends Module {
 
   val kernelId = s"scala${scalaBinaryVersion.filterNot(_ == '.')}"
   val kernel = new jupyter.kernel.interpreter.InterpreterKernel {
-    def apply() = {} // \/.fromTryCatchNonFatal(ScalaInterpreter())
+    def apply() = \/.fromTryCatchNonFatal(ScalaInterpreter())
   }
   val kernelInfo = KernelInfo(s"Scala $scalaBinaryVersion", kernelId)
 
@@ -95,10 +99,15 @@ case class JupyterScala(options: ServerAppOptions) extends App with LazyLogging 
   )
 }
 
+final class Evidence private[jupyter] (private[jupyter] val underlying: Any)
 
 object ScalaInterpreter {
   trait InterpreterDefaults extends interpreter.Interpreter {
     override def resultDisplay = true // Displaying results directly, not under Jupyter "Out" prompt
+
+    val scalaVersion = scala.util.Properties.versionNumberString
+    val scalaBinaryVersion = scala.util.Properties.versionNumberString.split('.').take(2).mkString(".")
+
 
     val languageInfo = LanguageInfo(
       name=s"scala${scalaBinaryVersion.filterNot(_ == '.')}",
@@ -108,19 +117,20 @@ object ScalaInterpreter {
       mimetype = "text/x-scala",
       pygments_lexer = "scala"
     )
+    //${BuildInfo.ammoniteVersion}
 
     override val implementation = ("jupyter-scala", s"${BuildInfo.version} (scala $scalaVersion)")
     override val banner =
-      s"""Jupyter Scala ${BuildInfo.version} (Ammonite ${BuildInfo.ammoniteVersion} fork) (Scala $scalaVersion)
+      s"""Jupyter Scala ${BuildInfo.version} (Ammonite  fork) (Scala $scalaVersion)
        """.stripMargin
   }
 
 
-  def apply() : Interpreter = {
+  def apply() : jupyter.kernel.interpreter.Interpreter = {
 
     def defaultAmmoniteHome = Path(System.getProperty("user.home"))/".ammonite"
 
-    new jupyter.kernel.interpreter.Interpreter with InterpreterDefaults {
+
       val predefFile = None
       val storage = Storage(defaultAmmoniteHome, predefFile) // TODO: predef file instead of None
 
@@ -135,26 +145,99 @@ object ScalaInterpreter {
       var history = new History(Vector())
 
       Timer("Repl init printer")
-      val underlying: Interpreter = new Interpreter(
-        prompt,
-        frontEnd,
-        frontEnd().width,
-        frontEnd().height,
-        pprint.Config.Colors.PPrintConfig,
-        colors,
-        println,
-        //printer.print,
-        storage,
-        history,
-        "",
-        Nil
-      )
+
+      var initialized0 = false
+
+      lazy val underlying: Interpreter = {
+        initialized0 = false;
+        val intp = new Interpreter(
+          prompt,
+          frontEnd,
+          frontEnd().width,
+          frontEnd().height,
+          pprint.Config.Colors.PPrintConfig,
+          colors,
+          println,
+          //printer.print,
+          storage,
+          history,
+          "",
+          Nil
+        )
+        initialized0 = true
+        intp
+      }
+
+    var currentPublish = Option.empty[Publish[Evidence]]
+    var currentMessage = Option.empty[ParsedMessage[_]]
+
+    new jupyter.kernel.interpreter.Interpreter with InterpreterDefaults {
+
+
+        override def initialized = initialized0
+        override def init() = underlying
+        def executionCount = underlying.replApi.history.length
+
+        override def publish(publish: Publish[ParsedMessage[_]]) = {
+          currentPublish = Some(publish.contramap[Evidence](e => e.underlying.asInstanceOf[ParsedMessage[_]]))
+        }
+
+        def complete(code: String, pos: Int) = {
+          val (pos0: Int, completions: Seq[String],
+            signatures) = underlying.pressy.complete(pos, underlying.eval.previousImportBlock, code)
+
+          //val (pos0, completions, _) = underlying.complete(pos, code)
+          (pos0, completions)
+        }
+
+        def interpret(line: String,
+                      output: Option[(String => Unit, String => Unit)],
+                      storeHistory: Boolean,
+                      current: Option[ParsedMessage[_]]) = {
+
+          //currentMessage = current
+          println("Interpreting line: " + line)
+
+          try {
+            Parsers.Splitter.parse(line) match {
+
+              case f: fastparse.core.Parsed.Failure if line.drop(f.index).trim() == "" =>
+                interpreter.Interpreter.Incomplete
+              case f: fastparse.core.Parsed.Failure =>
+                interpreter.Interpreter.Error(SyntaxError.msg(line, f.lastParser, f.index))
+              case fastparse.core.Parsed.Success(split, parseEndIdx) =>
+                // case fastparse.core.Result.Success(split, _) =>
+
+                val res = underlying.processLine(line,
+                  split,
+                  (it:Iterator[String]) => new jupyter.kernel.interpreter.DisplayData.RawData(
+                    it.mkString
+                  )
+                  //stdout = output.map(_._1),
+                  //stderr = output.map(_._2)
+                )
+
+                res match {
+                  case Res.Exit(v) => interpreter.Interpreter.Error("Close this notebook to exit")
+                  case Res.Failure(reason) => interpreter.Interpreter.Error(reason)
+                  case Res.Skip => interpreter.Interpreter.NoValue
+
+                  case r @ Res.Success(ev) =>
+                    underlying.handleOutput(r)
+
+                    interpreter.Interpreter.Value(EmptyData)
+                }
+            }
+          }
+          finally
+            currentMessage = None
+        }
+      }
 
 
 
 
 
-    }
   }
 }
 

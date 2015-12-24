@@ -231,3 +231,19 @@ object Colors{
  */
 case class Bind[T](name: String, value: T)
                   (implicit val typeTag: scala.reflect.runtime.universe.TypeTag[T])
+
+object SyntaxError{
+  def msg(code: String, p: fastparse.core.Parser[_], idx: Int) = {
+    val locationString = {
+      val (first, last) = code.splitAt(idx)
+      val lastSnippet = last.split('\n')(0)
+      val firstSnippet = first.reverse.split('\n').lift(0).getOrElse("").reverse
+      firstSnippet + lastSnippet + "\n" + (" " * firstSnippet.length) + "^"
+    }
+    val literal = fastparse.Utils.literalize(code.slice(idx, idx + 20))
+    s"SyntaxError: found $literal, expected $p in\n$locationString"
+  }
+}
+class SyntaxError(code: String, p: fastparse.core.Parser[_], idx: Int) extends Exception{
+  override def toString() = SyntaxError.msg(code, p, idx)
+}
