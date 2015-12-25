@@ -196,7 +196,7 @@ object ScalaInterpreter {
                       current: Option[ParsedMessage[_]]) = {
 
           //currentMessage = current
-          println("Interpreting line: " + line)
+          println("PRAVEEN: Interpreting line: " + line)
 
           try {
             Parsers.Splitter.parse(line) match {

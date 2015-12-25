@@ -217,7 +217,7 @@ lazy val jupyter_kernel = project
   * credible systems shell that can be used to replace bash/zsh/etc. for
   * common housekeeping tasks
   */
-/*lazy val shell = project
+lazy val shell = project
   .dependsOn(ops, repl % "compile->compile;test->test")
   .settings(
     sharedSettings,
@@ -294,4 +294,3 @@ lazy val published = project
   .in(file("target/published"))
   .aggregate(ops, shell, terminal, repl, sshd)
   .settings(dontPublishSettings)
-*/
