@@ -87,7 +87,7 @@ case class JupyterScala(options: ServerAppOptions) extends App with LazyLogging 
   ServerApp(
     ScalaModule.kernelId,
     new jupyter.kernel.interpreter.InterpreterKernel {
-      def apply() = \/.fromTryCatchNonFatal(ScalaInterpreter())
+      def apply() =  \/.fromTryCatchNonFatal(ScalaInterpreter())
     },
     ScalaModule.kernelInfo,
     progPath,
