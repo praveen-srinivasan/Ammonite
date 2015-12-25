@@ -9,7 +9,7 @@ import ammonite.repl.frontend.{AmmoniteFrontEnd, FrontEnd}
 import ammonite.repl.interp.Interpreter
 import ammonite.repl._
 import jupyter.api.Publish
-import jupyter.kernel.interpreter.DisplayData.EmptyData
+import jupyter.kernel.interpreter.DisplayData.{RawData, EmptyData}
 import jupyter.kernel.protocol.Output.LanguageInfo
 import jupyter.kernel.protocol.ParsedMessage
 import jupyter.kernel.{interpreter, KernelInfo}
@@ -199,6 +199,8 @@ object ScalaInterpreter {
           println("PRAVEEN: Interpreting line: " + line)
 
           try {
+            //val rawDataResult = new jupyter.kernel.interpreter.DisplayData.RawData
+            var outputString = ""
             Parsers.Splitter.parse(line) match {
 
               case f: fastparse.core.Parsed.Failure if line.drop(f.index).trim() == "" =>
@@ -210,9 +212,10 @@ object ScalaInterpreter {
 
                 val res = underlying.processLine(line,
                   split,
-                  (it:Iterator[String]) => new jupyter.kernel.interpreter.DisplayData.RawData(
-                    it.mkString
-                  )
+                  (it:Iterator[String]) => (outputString = it.mkString)
+                //new jupyter.kernel.interpreter.DisplayData.RawData(
+                  //  it.mkString
+
                   //stdout = output.map(_._1),
                   //stderr = output.map(_._2)
                 )
@@ -225,7 +228,7 @@ object ScalaInterpreter {
                   case r @ Res.Success(ev) =>
                     underlying.handleOutput(r)
 
-                    interpreter.Interpreter.Value(EmptyData)
+                    interpreter.Interpreter.Value(new RawData(outputString))
                 }
             }
           }
