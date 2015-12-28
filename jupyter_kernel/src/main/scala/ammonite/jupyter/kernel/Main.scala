@@ -198,6 +198,11 @@ object ScalaInterpreter {
           //currentMessage = current
           println("PRAVEEN: Interpreting line: " + line)
 
+         if (line != "") {
+            ///underlying.storage.fullHistory() = underlying.storage().fullHistory() :+ code
+            history = history :+ line
+          }
+
           try {
             //val rawDataResult = new jupyter.kernel.interpreter.DisplayData.RawData
             var outputString = ""
