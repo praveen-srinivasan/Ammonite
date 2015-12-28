@@ -227,7 +227,8 @@ object ScalaInterpreter {
 
                 res match {
                   case Res.Exit(v) => interpreter.Interpreter.Error("Close this notebook to exit")
-                  case Res.Failure(reason) => interpreter.Interpreter.Error(reason)
+                  case Res.Failure(reason) => {println("Res.Failure! "); interpreter.Interpreter.Error(reason)}
+                  case Res.Exception(t,s) => {interpreter.Interpreter.Exception("abc", "abc",Seq("abc").toList,t)}
                   case Res.Skip => interpreter.Interpreter.NoValue
 
                   case r @ Res.Success(ev) =>
