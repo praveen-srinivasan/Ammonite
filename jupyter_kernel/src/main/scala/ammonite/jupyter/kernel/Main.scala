@@ -9,6 +9,7 @@ import ammonite.repl.frontend.{AmmoniteFrontEnd, FrontEnd}
 import ammonite.repl.interp.Interpreter
 import ammonite.repl._
 import jupyter.api.Publish
+import jupyter.kernel.interpreter.DisplayData
 import jupyter.kernel.interpreter.DisplayData.{RawData, EmptyData}
 import jupyter.kernel.protocol.Output.LanguageInfo
 import jupyter.kernel.protocol.ParsedMessage
@@ -101,6 +102,32 @@ case class JupyterScala(options: ServerAppOptions) extends App with LazyLogging 
 
 final class Evidence private[jupyter] (private[jupyter] val underlying: Any)
 
+class RawAndHtmlData(s: String, htmls: Array[String]) extends RawData(s) {
+  override def data: Seq[(String,String)] =
+    { val r = RawData(s).data(0)._2 // Truncated string
+
+      val txtPlain =  Seq( "text/plain" -> r)
+
+      (htmls.length > 0) match {
+        case false => txtPlain
+        case true => (r.length > 0) match {
+          case true => txtPlain
+          case false => Seq[(String,String)]() ++ Seq( "text/html" -> Seq(r.replaceAll("(\r\n|\n)", "<BR/>"),
+            htmls.reduce ( _ + "<BR/>\n" +_)).reduce ( _ + "<BR/>\n" + _  ))
+        }
+      }
+
+
+
+
+
+
+
+  }
+
+
+}
+
 object ScalaInterpreter {
   trait InterpreterDefaults extends interpreter.Interpreter {
     override def resultDisplay = true // Displaying results directly, not under Jupyter "Out" prompt
@@ -153,8 +180,9 @@ object ScalaInterpreter {
         val intp = new Interpreter(
           prompt,
           frontEnd,
-          frontEnd().width,
-          frontEnd().height,
+          //frontEnd().width,
+          119,
+          30,
           pprint.Config.Colors.PPrintConfig,
           colors,
           println,
@@ -225,6 +253,33 @@ object ScalaInterpreter {
                   //stderr = output.map(_._2)
                 )
 
+               /* val htmlOutput: Array[String] = Seq(
+                  """
+                    |<script src="https://cdn.rawgit.com/drudru/ansi_up/master/ansi_up.js" type="text/javascript"></script>
+                    |<pre id="test" style="font-family: monospace"></pre>
+                    |
+                    |
+                    |    <script type="text/javascript">
+                    |
+                    |    var txt  = "[36mx[0m: [32mInt[0m = [32m1[0m<BR>[36my[0m: [32mInt[0m = [32m2[0m"
+                    |
+                    |
+                    |    var html = ansi_up.ansi_to_html(txt);
+                    |
+                    |    var cdiv = document.getElementById("test");
+                    |
+                    |    cdiv.innerHTML = html;
+                    |
+                    |    </script>
+                    |
+                    |
+                    |
+                  """.stripMargin).toArray*/
+
+                val htmlOutput: Array[String] = underlying.htmlBuffer.toArray
+
+                underlying.htmlBuffer.clear
+
                 res match {
                   case Res.Exit(v) => interpreter.Interpreter.Error("Close this notebook to exit")
                   case Res.Failure(reason) => {println("Res.Failure! "); interpreter.Interpreter.Error(reason)}
@@ -236,7 +291,10 @@ object ScalaInterpreter {
                   case r @ Res.Success(ev) =>
                     underlying.handleOutput(r)
 
-                    interpreter.Interpreter.Value(new RawData(outputString))
+
+                    interpreter.Interpreter.Value( new RawAndHtmlData(outputString, htmlOutput) )
+
+                  //new RawData(outputString))
                 }
             }
           }

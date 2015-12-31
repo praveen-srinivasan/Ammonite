@@ -152,8 +152,12 @@ class Interpreter(prompt0: Ref[String],
         val ev = evaluate(code, imports.flatten)
         Timer("processScript loop 2")
         ev match {
-          case Res.Failure(msg) => throw new CompilationError(msg)
-          case Res.Exception(throwable, msg) => throw throwable
+          case Res.Failure(msg) => { println("Compile error: " + msg)
+            imports.last }
+            //throw new CompilationError(msg)
+          case Res.Exception(throwable, msg) => { println("Exception: " + throwable.toString)
+            imports.last }
+            // throw throwable
           case Res.Success(ev) => loop(
             blocks.tail,
             imports :+ (ev.imports ++ nestedScriptImports)
@@ -229,12 +233,18 @@ class Interpreter(prompt0: Ref[String],
     }
   }
 
+  val htmlBuffer = scala.collection.mutable.ArrayBuffer.empty[String]
+
+
   lazy val replApi: ReplAPI = new DefaultReplAPI { outer => 
 
     def imports = interp.eval.previousImportBlock
     val colors = colors0
     val prompt = prompt0
     val frontEnd = frontEnd0
+
+
+    def showHtml(html: String) = { htmlBuffer += html }
 
     def writeJar(path: String = null): String = {
       val jarPath: java.nio.file.Path = (path == null) match {
