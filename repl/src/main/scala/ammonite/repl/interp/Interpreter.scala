@@ -36,6 +36,8 @@ class Interpreter(prompt0: Ref[String],
                   replArgs: Seq[Bind[_]]){ interp =>
 
 
+  val completionHandlers = scala.collection.mutable.ArrayBuffer[CompletionHandler]()
+
   val hardcodedPredef =
     """import ammonite.repl.frontend.ReplBridge.repl
       |import ammonite.repl.frontend.ReplBridge.repl.{
@@ -243,6 +245,10 @@ class Interpreter(prompt0: Ref[String],
     val prompt = prompt0
     val frontEnd = frontEnd0
 
+
+    def registerCompletionHandler(handler: CompletionHandler) = {
+      completionHandlers += handler
+    }
 
     def showHtml(html: String) = { htmlBuffer += html }
 

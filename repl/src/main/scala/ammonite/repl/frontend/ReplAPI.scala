@@ -20,6 +20,11 @@ class ReplAPIHolder {
   implicit lazy val repl = repl0
 }
 
+trait CompletionHandler {
+  def complete(code:String, pos:Int) : (Int, Seq[String])
+}
+
+
 /**
  * Thrown to exit the REPL cleanly
  */
@@ -133,6 +138,9 @@ trait ReplAPI {
 
 
   def showHtml(html: String): Unit
+
+  def registerCompletionHandler(handler: CompletionHandler)
+
 
   /**
    * Lets you configure the pretty-printing of a value. By default, it simply

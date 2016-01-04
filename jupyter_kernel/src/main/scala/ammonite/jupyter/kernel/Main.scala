@@ -106,27 +106,24 @@ class RawAndHtmlData(s: String, htmls: Array[String]) extends RawData(s) {
   override def data: Seq[(String,String)] =
     { val r = RawData(s).data(0)._2 // Truncated string
 
+
+
       val txtPlain =  Seq( "text/plain" -> r)
+
+      lazy val txtHtml = {r.isEmpty match {
+        case true => Seq.empty[String]
+        case false => Seq(r.replaceAll("(\r\n|\n)", "<BR/>"))
+      }}
+
 
       (htmls.length > 0) match {
         case false => txtPlain
-        case true => (r.length > 0) match {
-          case true => txtPlain
-          case false => Seq[(String,String)]() ++ Seq( "text/html" -> Seq(r.replaceAll("(\r\n|\n)", "<BR/>"),
-            htmls.reduce ( _ + "<BR/>\n" +_)).reduce ( _ + "<BR/>\n" + _  ))
-        }
+        case true =>
+          Seq( "text/html" ->  (txtHtml ++ Seq(htmls.reduce ( _ + "<BR/>\n" +_))).reduce ( _ + "<BR/>\n" + _  ))
       }
-
-
-
-
-
-
-
   }
-
-
 }
+
 
 object ScalaInterpreter {
   trait InterpreterDefaults extends interpreter.Interpreter {
@@ -214,8 +211,13 @@ object ScalaInterpreter {
           val (pos0: Int, completions: Seq[String],
             signatures) = underlying.pressy.complete(pos, underlying.eval.previousImportBlock, code)
 
+          // Check if we have
+          val otherCompletions =
+            underlying.completionHandlers.flatMap{ handler => handler.complete(code,pos)._2}
+
+
           //val (pos0, completions, _) = underlying.complete(pos, code)
-          (pos0, completions)
+          (pos0, otherCompletions ++ completions)
         }
 
         def interpret(line: String,
@@ -224,13 +226,14 @@ object ScalaInterpreter {
                       current: Option[ParsedMessage[_]]) = {
 
           //currentMessage = current
-          println("PRAVEEN: Interpreting line: " + line)
+          //println("PRAVEEN: Interpreting line: " + line)
 
          if (line != "") {
             ///underlying.storage.fullHistory() = underlying.storage().fullHistory() :+ code
             history = history :+ line
           }
 
+          val existingOut = System.out
           try {
             //val rawDataResult = new jupyter.kernel.interpreter.DisplayData.RawData
             var outputString = ""
@@ -243,38 +246,22 @@ object ScalaInterpreter {
               case fastparse.core.Parsed.Success(split, parseEndIdx) =>
                 // case fastparse.core.Result.Success(split, _) =>
 
+                // Capture stdout
+
+                val baos = new ByteArrayOutputStream();
+                val ps = new PrintStream(baos, false)
+
+                System.setOut(ps)
+                Console.setOut(ps)
                 val res = underlying.processLine(line,
                   split,
                   (it:Iterator[String]) => (outputString = it.mkString)
-                //new jupyter.kernel.interpreter.DisplayData.RawData(
-                  //  it.mkString
-
-                  //stdout = output.map(_._1),
-                  //stderr = output.map(_._2)
                 )
 
-               /* val htmlOutput: Array[String] = Seq(
-                  """
-                    |<script src="https://cdn.rawgit.com/drudru/ansi_up/master/ansi_up.js" type="text/javascript"></script>
-                    |<pre id="test" style="font-family: monospace"></pre>
-                    |
-                    |
-                    |    <script type="text/javascript">
-                    |
-                    |    var txt  = "[36mx[0m: [32mInt[0m = [32m1[0m<BR>[36my[0m: [32mInt[0m = [32m2[0m"
-                    |
-                    |
-                    |    var html = ansi_up.ansi_to_html(txt);
-                    |
-                    |    var cdiv = document.getElementById("test");
-                    |
-                    |    cdiv.innerHTML = html;
-                    |
-                    |    </script>
-                    |
-                    |
-                    |
-                  """.stripMargin).toArray*/
+
+
+
+                //System.setOut(existingOut)
 
                 val htmlOutput: Array[String] = underlying.htmlBuffer.toArray
 
@@ -282,7 +269,7 @@ object ScalaInterpreter {
 
                 res match {
                   case Res.Exit(v) => interpreter.Interpreter.Error("Close this notebook to exit")
-                  case Res.Failure(reason) => {println("Res.Failure! "); interpreter.Interpreter.Error(reason)}
+                  case Res.Failure(reason) => {interpreter.Interpreter.Error(reason)}
                   case Res.Exception(t,s) => {interpreter.Interpreter.Exception(t.getClass.getName, t.getMessage,
                     t.getStackTrace.map{ _.toString }.toList,
                     t)}
@@ -291,15 +278,26 @@ object ScalaInterpreter {
                   case r @ Res.Success(ev) =>
                     underlying.handleOutput(r)
 
+                    interpreter.Interpreter.Value( new RawAndHtmlData({ps.flush();
 
-                    interpreter.Interpreter.Value( new RawAndHtmlData(outputString, htmlOutput) )
+                      (((baos.size() > 0) match {
+                        case true => Seq(baos.toString)
+                        case false => Seq.empty[String]
+                      }) ++ Seq(outputString)).reduce { _ + "\n" + _ }
+                       },
+                      htmlOutput) )
 
                   //new RawData(outputString))
                 }
             }
           }
-          finally
+          finally {
+            System.setOut(existingOut)
+            Console.setOut(existingOut)
+
             currentMessage = None
+          }
+
         }
       }
 
