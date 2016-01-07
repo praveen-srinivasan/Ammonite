@@ -237,6 +237,7 @@ class Interpreter(prompt0: Ref[String],
 
   val htmlBuffer = scala.collection.mutable.ArrayBuffer.empty[String]
 
+  val loadedJarFiles = new scala.collection.mutable.HashSet[File]()
 
   lazy val replApi: ReplAPI = new DefaultReplAPI { outer => 
 
@@ -251,6 +252,9 @@ class Interpreter(prompt0: Ref[String],
     }
 
     def showHtml(html: String) = { htmlBuffer += html }
+
+    def clearLoadedJarFiles = loadedJarFiles.clear()
+
 
     def writeJar(path: String = null): String = {
       val jarPath: java.nio.file.Path = (path == null) match {
@@ -283,6 +287,12 @@ class Interpreter(prompt0: Ref[String],
     lazy val resolvers = 
       Ref(Resolvers.defaultResolvers)
 
+
+
+    def getLoadedJarFiles = {
+      loadedJarFiles.toArray.toIterable
+    }
+
     object load extends DefaultLoadJar with Load {
     
       def resolvers: List[Resolver] =
@@ -291,6 +301,7 @@ class Interpreter(prompt0: Ref[String],
       def handleJar(jar: File) = {
         eval.sess.frames.head.extraJars = eval.sess.frames.head.extraJars ++ Seq(jar)
         evalClassloader.add(jar.toURI.toURL)
+        loadedJarFiles += jar
       }
 
       def apply(line: String) = processExec(line)
@@ -448,4 +459,5 @@ class Interpreter(prompt0: Ref[String],
   Timer("Interpreter init predef 0")
   init()
   Timer("Interpreter init predef 1")
+
 }

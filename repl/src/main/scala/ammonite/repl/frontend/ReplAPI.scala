@@ -137,6 +137,10 @@ trait ReplAPI {
   def writeJar(name: String = null): String
 
 
+  def getLoadedJarFiles: Iterable[File]
+
+  def clearLoadedJarFiles
+
   def showHtml(html: String): Unit
 
   def registerCompletionHandler(handler: CompletionHandler)
