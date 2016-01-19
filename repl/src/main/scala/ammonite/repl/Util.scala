@@ -178,7 +178,7 @@ object Timer{
    */
   def apply(s: String) = {
     val now = System.nanoTime()
-//    println(s + ": " + (now - current) / 1000000.0)
+    //println(s + ": " + (now - current) / 1000000.0)
     current = now
   }
 }

@@ -451,6 +451,7 @@ class Interpreter(prompt0: Ref[String],
             }
             .mkString("\n")
 
+  println("Processing predef")
   processModule(hardcodedPredef)
   init()
 
@@ -459,5 +460,7 @@ class Interpreter(prompt0: Ref[String],
   Timer("Interpreter init predef 0")
   init()
   Timer("Interpreter init predef 1")
+
+  println("Done processing predef")
 
 }

@@ -211,6 +211,7 @@ object ScalaInterpreter {
           val (pos0: Int, completions: Seq[String],
             signatures) = underlying.pressy.complete(pos, underlying.eval.previousImportBlock, code)
 
+          //signatures.foreach{s => println(s)}
           // Check if we have
           val otherCompletions =
             underlying.completionHandlers.flatMap{ handler => handler.complete(code,pos)._2}
