@@ -150,6 +150,8 @@ object ScalaInterpreter {
   }
 
 
+  val _prompt = Ref("@ ")
+
   def apply() : jupyter.kernel.interpreter.Interpreter = {
 
     def defaultAmmoniteHome = Path(System.getProperty("user.home"))/".ammonite"
@@ -158,7 +160,7 @@ object ScalaInterpreter {
       val predefFile = None
       val storage = Storage(defaultAmmoniteHome, predefFile) // TODO: predef file instead of None
 
-      val prompt = Ref("@ ")
+      val prompt = _prompt //Ref("@ ")
 
       val colors = Ref[Colors](Colors.Default)
       val frontEnd = Ref[FrontEnd](AmmoniteFrontEnd(
@@ -172,7 +174,8 @@ object ScalaInterpreter {
 
       var initialized0 = false
 
-      lazy val underlying: Interpreter = {
+      //lazy
+      val underlying: Interpreter = {
         initialized0 = false;
         val intp = new Interpreter(
           prompt,
