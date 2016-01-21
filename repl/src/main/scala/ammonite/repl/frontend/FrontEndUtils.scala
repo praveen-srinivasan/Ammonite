@@ -12,8 +12,9 @@ import scala.annotation.tailrec
 object FrontEndUtils {
   def width = ammonite.terminal.TTY.consoleDim("cols")
   def height = ammonite.terminal.TTY.consoleDim("lines")
-  def tabulate(snippets: Seq[String], width: Int) = {
+  def tabulate(snippetsRaw: Seq[String], width: Int) = {
     val gap = 2
+    val snippets = if (snippetsRaw.isEmpty) Seq("") else snippetsRaw
     val maxLength = snippets.maxBy(_.replaceAll("\u001B\\[[;\\d]*m", "").length).length + gap
     val columns = math.max(1, width / maxLength)
 
