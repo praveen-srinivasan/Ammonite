@@ -24,12 +24,26 @@ import com.typesafe.scalalogging.slf4j.LazyLogging
 
 import scalaz.\/
 
+object DebugUtils {
+  def myPrint(s: String): Unit = {
+    System.err.println(s)
+  }
+}
+
 object ScalaModule extends Module {
   val scalaBinaryVersion = scala.util.Properties.versionNumberString.split('.').take(2).mkString(".")
 
   val kernelId = s"scala${scalaBinaryVersion.filterNot(_ == '.')}"
   val kernel = new jupyter.kernel.interpreter.InterpreterKernel {
-    def apply() = \/.fromTryCatchNonFatal(ScalaInterpreter())
+
+    val interpreter = ScalaInterpreter()
+
+    val a = DebugUtils.myPrint("ScalaModule: just before init")
+    interpreter.init()
+    val b = DebugUtils.myPrint("ScalaModule: just after init")
+
+    def apply() = {DebugUtils.myPrint("ScalaModule: just before disjunction!")
+      \/.fromTryCatchNonFatal(interpreter)}
   }
   val kernelInfo = KernelInfo(s"Scala $scalaBinaryVersion", kernelId)
 
@@ -86,10 +100,11 @@ case class JupyterScala(options: ServerAppOptions) extends App with LazyLogging 
   val scalaBinaryVersion = _root_.scala.util.Properties.versionNumberString.split('.').take(2).mkString(".")
 
   ServerApp(
-    ScalaModule.kernelId,
-    new jupyter.kernel.interpreter.InterpreterKernel {
-      def apply() =  \/.fromTryCatchNonFatal(ScalaInterpreter())
-    },
+      ScalaModule.kernelId,
+    ScalaModule.kernel,
+    //new jupyter.kernel.interpreter.InterpreterKernel {
+     // def apply() =  ScalaModule.kernel() //\/.fromTryCatchNonFatal(ScalaInterpreter())
+    //},
     ScalaModule.kernelInfo,
     progPath,
     options,
@@ -150,8 +165,6 @@ object ScalaInterpreter {
   }
 
 
-  val _prompt = Ref("@ ")
-
   def apply() : jupyter.kernel.interpreter.Interpreter = {
 
     def defaultAmmoniteHome = Path(System.getProperty("user.home"))/".ammonite"
@@ -160,7 +173,7 @@ object ScalaInterpreter {
       val predefFile = None
       val storage = Storage(defaultAmmoniteHome, predefFile) // TODO: predef file instead of None
 
-      val prompt = _prompt //Ref("@ ")
+      val prompt = Ref("@ ")
 
       val colors = Ref[Colors](Colors.Default)
       val frontEnd = Ref[FrontEnd](AmmoniteFrontEnd(
@@ -174,8 +187,7 @@ object ScalaInterpreter {
 
       var initialized0 = false
 
-      //lazy
-      val underlying: Interpreter = {
+      lazy val underlying: Interpreter = {
         initialized0 = false;
         val intp = new Interpreter(
           prompt,
@@ -203,7 +215,10 @@ object ScalaInterpreter {
 
 
         override def initialized = initialized0
-        override def init() = underlying
+        override def init() = {DebugUtils.myPrint("ScalaInterpreter: just before underlying; initialized: " + initialized)
+          underlying
+          DebugUtils.myPrint("ScalaInterpreter: just after underlying; initialized: " + initialized) }
+
         def executionCount = underlying.replApi.history.length
 
         override def publish(publish: Publish[ParsedMessage[_]]) = {
