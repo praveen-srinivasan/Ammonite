@@ -331,6 +331,8 @@ object ScalaInterpreter {
 object JupyterScala extends AppOf[JupyterScala] {
   val parser = default
   override def main(args: Array[String]): Unit = {
+    println("Kernel: " + ScalaModule.kernel)
+    println("Kernel map: " + ScalaModule.kernels)
     super.main(args)
          //println("Hello, world!")
     }
