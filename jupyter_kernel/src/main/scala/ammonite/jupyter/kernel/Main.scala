@@ -245,7 +245,7 @@ object ScalaInterpreter {
                       current: Option[ParsedMessage[_]]) = {
 
           //currentMessage = current
-          //println("PRAVEEN: Interpreting line: " + line)
+          println("PRAVEEN: Interpreting line: " + line)
 
          if (line != "") {
             ///underlying.storage.fullHistory() = underlying.storage().fullHistory() :+ code
