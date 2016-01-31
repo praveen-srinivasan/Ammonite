@@ -212,6 +212,27 @@ lazy val jupyter_kernel = project
   )
 
 
+lazy val jupyter_simple_kernel = project
+  .dependsOn(repl)
+  .settings(
+    sharedSettings,
+    resolvers ++= Seq(Resolver.sonatypeRepo("releases"),
+      Resolver.sonatypeRepo("snapshots")),
+    name := "ammonite-jupyter-simple-kernel",
+    crossVersion := CrossVersion.full,
+    mainClass := Some("ammonite.jupyter.simple_kernel.SimpleJupyterScala"),
+    libraryDependencies ++= Seq(//"org.zeromq" % "jeromq" % "0.3.5",
+      "com.github.scopt" %% "scopt" % "3.3.0",
+      "org.json4s" %% "json4s-jackson" % "3.3.0",
+      "com.typesafe" % "config" % "1.2.1",
+      "com.github.alexarchambault" %% "argonaut-shapeless_6.1" % "0.1.1",
+      "com.typesafe.scala-logging" %% "scala-logging-slf4j" % "2.1.2",
+      "com.github.alexarchambault" %% "case-app" % "0.2.2",
+      "ch.qos.logback" % "logback-classic" % "1.0.13"
+    )
+  )
+
+
 /**
   * Project that binds together [[ops]] and [[repl]], turning them into a
   * credible systems shell that can be used to replace bash/zsh/etc. for
